@@ -135,7 +135,7 @@ class Economy:
       interest = np.random.uniform(min_interest, max_interest)
       entry.lending_agent.net_worth += interest
       entry.agent.net_worth -= interest
-      print("networth dropping,"+ str(interest))
+      #print("networth dropping,"+ str(interest))
       #print("loan interest paid" + str(interest))
       # pay off a random loan
       entry = random.choice(self.ledger.entries)
@@ -144,7 +144,7 @@ class Economy:
       self.log_firm_money(entry.firm, "amt received @117")
 
       entry.agent.net_worth -= amount
-      print("networth dropping,"+ str(amount))
+      #print("networth dropping,"+ str(amount))
 
       self.ledger.settle_loan_between_agent_and_agent(entry.agent.id,
                                                       entry.lending_agent.id)
@@ -186,7 +186,7 @@ class Economy:
       bet_amount = 0.15 * agent_lose.net_worth
     else:
       bet_amount = 0.02 * agent_lose.net_worth
-    print (">>> bet amount is " + str(bet_amount))
+    #print (">>> bet amount is " + str(bet_amount))
 
     agent_win.net_worth = agent_win.net_worth + bet_amount
     agent_lose.net_worth = agent_lose.net_worth - bet_amount
@@ -454,31 +454,31 @@ class Economy:
     agent_id = 0
     for agent in self.agents:
       data = {}
-      data["iteration"] = current_iteration_count
+      data["Time"] = current_iteration_count
       data["type"] = "agent"
-      data["subtype"] = agent.subtype
+      data["Income-class"] = agent.subtype
       data["id"] = "G" + str(agent_id)
-      data["money"] = "{:.2f}".format(agent.net_worth)
+      data["Net-worth"] = "{:.2f}".format(agent.net_worth)
       agent_id = agent_id + 1
       list.append(data)
 
     firm_id = 0
     for firm in self.firms:
       data = {}
-      data["iteration"] = current_iteration_count
+      data["Time"] = current_iteration_count
       data["type"] = "firm"
       data["id"] = "F" + str(firm_id)
-      data["money"] = "{:.2f}".format(firm.money)
+      data["Net-worth"] = "{:.2f}".format(firm.money)
       firm_id = firm_id + 1
       list.append(data)
 
     regulator_id = 0
     for regulator in self.regulators:
       data = {}
-      data["iteration"] = current_iteration_count
+      data["Time"] = current_iteration_count
       data["type"] = "regulator"
       data["id"] = "R" + str(regulator_id)
-      data["money"] = "{:.2f}".format(regulator.income)
+      data["Net-worth"] = "{:.2f}".format(regulator.income)
       regulator_id = regulator_id + 1
       list.append(data)
 
@@ -637,5 +637,6 @@ class Economy:
     return self.config["regulators"][key]
 
   def log_firm_money(self,firm, msg):
-    if firm.id == self.track_firm_id:
-      print(str(firm.money) + ","+ msg)
+    pass
+    #if firm.id == self.track_firm_id:
+     # print(str(firm.money) + ","+ msg)
