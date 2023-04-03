@@ -111,8 +111,6 @@ class Economy:
     max_transaction_fee = self.get_max_tranaction_fee() * loan_amount
     transaction_fee = np.random.uniform(min_transaction_fee,
                                         max_transaction_fee)
-    if self.is_centralized==False:
-      transaction_fee = transaction_fee/2
     crypto_lending_firm.money += transaction_fee
     self.log_firm_money(crypto_lending_firm,"crypto txn fee received")
     seeking_agent.net_worth -= transaction_fee
@@ -578,13 +576,19 @@ class Economy:
   def get_min_tranaction_fee(self):
     regulation_mode = self.config["general"]["regulation_mode"]
     key = "min_transaction_fee_"+regulation_mode
-    return self.config["firms"][key]
+    value = self.config["firms"][key]
+    if (self.is_centralized == False):
+      value = value *0.5
+    return value
 
 
   def get_max_tranaction_fee(self):
     regulation_mode = self.config["general"]["regulation_mode"]
     key = "max_transaction_fee_"+regulation_mode
-    return self.config["firms"][key]
+    value = self.config["firms"][key]
+    if (self.is_centralized == False):
+      value = value *0.5
+    return value
 
   def get_min_tax_rate_agents(self):
     regulation_mode = self.config["general"]["regulation_mode"]
@@ -609,12 +613,18 @@ class Economy:
   def get_min_interest_rate(self):
     regulation_mode = self.config["general"]["regulation_mode"]
     key = "min_interest_rate_" + regulation_mode
-    return self.config["regulators"][key]
+    value = self.config["regulators"][key]
+    if (self.is_centralized == False):
+      value = value *0.5
+    return value
 
   def get_max_interest_rate(self):
     regulation_mode = self.config["general"]["regulation_mode"]
     key = "max_interest_rate_" + regulation_mode
-    return self.config["regulators"][key]
+    value= self.config["regulators"][key]
+    if (self.is_centralized == False):
+      value = value *0.5
+    return value
 
   def get_min_gov_aid_agent(self):
     regulation_mode = self.config["general"]["regulation_mode"]
