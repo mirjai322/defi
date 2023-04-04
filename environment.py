@@ -1,3 +1,7 @@
+'''
+This is the main class where most of the logic resides for all the interactions happening during simulation
+'''
+
 import math
 
 from agents import Agent
@@ -20,18 +24,15 @@ class Economy:
     self.summary = []
     self.ledger = Ledger()
     self.is_centralized = is_centralized
-    print("configuration based on regulation setup::::")
-    print(self.get_min_tax_rate_agents())
-    print(self.get_max_tax_rate_agents())
-    print(self.get_min_tax_rate_firms())
-    print(self.get_max_tax_rate_firms())
-    print(self.get_min_interest_rate())
-    print(self.get_max_interest_rate())
-    print(self.get_min_tranaction_fee())
-    print(self.get_max_tranaction_fee())
 
+  '''
+  configuring all the agents. 5% agents will be rich, 20% will be poor and the rest 
+  will be middle class. It will maintain the list of under represented agents (middle and low income)
+  The under represented agents will have a lot more involvement in the DeFi setup. 
+  '''
   def configure_agents(self):
     self.agents = []
+    self.underrep_agents = []
     total_agents = self.config['agents']['num_agents']
     total_rich_agents = math.ceil(total_agents*0.05)
     total_poor_agents = math.ceil(total_agents*0.20)
@@ -50,6 +51,7 @@ class Economy:
       rand_num = random.randint(1, 2)
       a.net_worth = rand_num * 5000000
       self.agents.append(a)
+      self.underrep_agents.append(a)
 
     for i in range(total_poor_agents):
       a = Agent(self.config['agents'])
@@ -57,8 +59,11 @@ class Economy:
       rand_num = random.randint(1, 2)
       a.net_worth = rand_num * 10000
       self.agents.append(a)
+      self.underrep_agents.append(a)
 
-
+  '''
+  configuring all the firms 
+  '''
   def configure_firms(self):
     self.firms = []
     for i in range(self.config['firms']['num_firms']):
@@ -69,6 +74,9 @@ class Economy:
       # assign random networth between 1B to 100B
     self.track_firm_id = self.firms[0].id
 
+  '''
+  configure regulators i.e governement. Typicaly only 1 regulator
+  '''
   def configure_regulators(self):
     self.regulators = []  # Might just be a list of 1 item
     for i in range(self.config['regulators']['num_regulators']):
@@ -79,7 +87,14 @@ class Economy:
       #self.regulators.append(Regulator(self.config['regulators']))
 
   # ALL decentralized interactions below
-  def decentralized_lending(self):
+  def decentralized_lending_for_underrep(self):
+    seeking_agent = random.choice(self.underrep_agents)
+    self.decentralized_lending(seeking_agent)
+    seeking_agent = random.choice(self.underrep_agents)
+
+
+
+  def decentralized_lending(self, seeking_agent=None):
     '''
     Pick a random agent to be the Seeking Agent
     Pick a random agent to be the Lending Agent
@@ -91,7 +106,8 @@ class Economy:
     Interest Rate gets subtracted from Seeking Agent's net worth AND added to Lending Agent net worth
      '''
 
-    seeking_agent = random.choice(self.agents)
+    if (seeking_agent == None):
+      seeking_agent = random.choice(self.agents)
     lending_agent = None
     exclude = seeking_agent
     #make sure seeking_agent != lending_agent
@@ -133,8 +149,7 @@ class Economy:
       interest = np.random.uniform(min_interest, max_interest)
       entry.lending_agent.net_worth += interest
       entry.agent.net_worth -= interest
-      #print("networth dropping,"+ str(interest))
-      #print("loan interest paid" + str(interest))
+
       # pay off a random loan
       entry = random.choice(self.ledger.entries)
       loan_amount = entry.amount
@@ -142,12 +157,15 @@ class Economy:
       self.log_firm_money(entry.firm, "amt received @117")
 
       entry.agent.net_worth -= amount
-      #print("networth dropping,"+ str(amount))
 
       self.ledger.settle_loan_between_agent_and_agent(entry.agent.id,
                                                       entry.lending_agent.id)
 
-  def interact_agents_with_agents(self):
+  def interact_underrep_agents_with_agents(self):
+    agent_win = random.choice(self.underrep_agents)
+    self.interact_agents_with_agents(agent_win)
+
+  def interact_agents_with_agents(self,agent_win = None):
     """
         1. Randomly pick two agents (people)
         2. Randomly have each of them bet a percentage of their money based on who they are
@@ -161,7 +179,8 @@ class Economy:
           Invest 10%
           Bet less often @TODO
     """
-    agent_win = random.choice(self.agents)
+    if (agent_win==None):
+      agent_win = random.choice(self.agents)
     agents_filtered = []
     for agent in self.agents:
       if ((agent.id != agent_win.id) and (agent.subtype==agent_win.subtype)):
@@ -184,7 +203,6 @@ class Economy:
       bet_amount = 0.15 * agent_lose.net_worth
     else:
       bet_amount = 0.02 * agent_lose.net_worth
-    #print (">>> bet amount is " + str(bet_amount))
 
     agent_win.net_worth = agent_win.net_worth + bet_amount
     agent_lose.net_worth = agent_lose.net_worth - bet_amount
@@ -195,8 +213,6 @@ class Economy:
     #choose random firm, that is the firm that facilitated the transaction
     handler = random.choice(self.firms)
     handler.money += transaction_fee
-    self.log_firm_money(handler, "txn fee received @160")
-
     agent_win.net_worth -= transaction_fee / 2
     agent_lose.net_worth -= transaction_fee / 2
 
@@ -260,7 +276,6 @@ class Economy:
     self.log_firm_money(selected_firm, "loand amt deducted @210")
 
     agent.net_worth = agent.net_worth + loan_amount
-    #print ("loan initiated")
     self.ledger.initiate_loan(agent, selected_firm, loan_amount)
 
     # scan ledger and randomly pick one loan to default, one loan if any to pay_off, and random interest payment
@@ -273,7 +288,6 @@ class Economy:
       self.log_firm_money(entry.firm, "interest amt recieved @222")
 
       entry.agent.net_worth -= interest_amount
-      #print ("loan interest paid")
       # pay off a random loan
       entry = random.choice(self.ledger.entries)
       loan_amount = entry.amount
@@ -296,7 +310,6 @@ class Economy:
     choice = random.choice([0, 1])
     if choice == 1 and len(self.firms) > 5:
       #merger
-      print ("trying to merge 2 firms")
       firm1 = random.choice(self.firms)
       money1 = firm1.money
       firm2 = random.choice(self.firms)
@@ -316,7 +329,6 @@ class Economy:
 
     if choice == 0:
       #spinoff ie spit a firm into 2
-      print ("firms getting split")
       pre_split_firm = random.choice(self.firms)
       moneyBefore = pre_split_firm.money
       new_spinnedoff_firm = Firm(self.config['firms'])
@@ -519,7 +531,7 @@ class Economy:
     summary_data["stddev"] = stddev
 
     self.summary.append(summary_data)
-
+    '''
     print("Agent Stats:")
     print("Min: " + self.formatNumber(min))
     print("Max: " + self.formatNumber(max))
@@ -528,7 +540,7 @@ class Economy:
     print("Std Dev: " + self.formatNumber(stddev))
     print("-------------------------------------------------------")
     print()
-
+    '''
     # summary of firms
     summary_data = {}
     summary_data["run"] = run_number
@@ -551,7 +563,7 @@ class Economy:
     summary_data["stddev"] = stddev
 
     self.summary.append(summary_data)
-
+    '''
     print("Firm Stats:")
     print("Min: " + self.formatNumber(min))
     print("Max: " + self.formatNumber(max))
@@ -561,7 +573,7 @@ class Economy:
     print("# of Firms:" + str(len(self.firms)))
     print("-------------------------------------------------------")
     print()
-
+    '''
     #reset the state to None for the next iteration
     self.state = None
 
@@ -577,8 +589,10 @@ class Economy:
     regulation_mode = self.config["general"]["regulation_mode"]
     key = "min_transaction_fee_"+regulation_mode
     value = self.config["firms"][key]
-    if (self.is_centralized == False):
-      value = value *0.5
+    if (self.is_centralized == False and regulation_mode == "high" ):
+      value = value *0.8
+    elif (self.is_centralized == False):
+      value = value * 0.5
     return value
 
 
@@ -586,8 +600,10 @@ class Economy:
     regulation_mode = self.config["general"]["regulation_mode"]
     key = "max_transaction_fee_"+regulation_mode
     value = self.config["firms"][key]
-    if (self.is_centralized == False):
-      value = value *0.5
+    if (self.is_centralized == False and regulation_mode == "high" ):
+      value = value *0.8
+    elif (self.is_centralized == False):
+      value = value * 0.5
     return value
 
   def get_min_tax_rate_agents(self):
@@ -614,16 +630,20 @@ class Economy:
     regulation_mode = self.config["general"]["regulation_mode"]
     key = "min_interest_rate_" + regulation_mode
     value = self.config["regulators"][key]
-    if (self.is_centralized == False):
-      value = value *0.5
+    if (self.is_centralized == False and regulation_mode == "high" ):
+      value = value *0.8
+    elif (self.is_centralized == False):
+      value = value * 0.5
     return value
 
   def get_max_interest_rate(self):
     regulation_mode = self.config["general"]["regulation_mode"]
     key = "max_interest_rate_" + regulation_mode
     value= self.config["regulators"][key]
-    if (self.is_centralized == False):
-      value = value *0.5
+    if (self.is_centralized == False and regulation_mode == "high" ):
+      value = value *0.8
+    elif (self.is_centralized == False):
+      value = value * 0.5
     return value
 
   def get_min_gov_aid_agent(self):
@@ -648,5 +668,3 @@ class Economy:
 
   def log_firm_money(self,firm, msg):
     pass
-    #if firm.id == self.track_firm_id:
-     # print(str(firm.money) + ","+ msg)

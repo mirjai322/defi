@@ -1,3 +1,20 @@
+'''
+This is the main program that kicks off the simulation process. It defines all the config properties that are used by the simulation.
+It runs  6 scenarios
+1. Centralized System with Low Gov Regulations
+2. Centralized System with Medium Gov Regulations
+3. Centralized System with High Gov Regulations
+4. De-Centralized System with Low Gov Regulations
+5. De-Centralized System with Medium Gov Regulations
+6. De-Centralized System with High Gov Regulations
+
+For each scenario an output folder is created.
+The details of each "run" are in a "detail_data_iterationXXX.csv file
+There is a summary file created that provides statistical information like max, min, stddev for
+all the agents, firms and regulators
+
+'''
+
 from agents import Agent
 from firms import Firm
 from regulators import Regulator
@@ -25,8 +42,8 @@ config = {
     "firm_action_space": ['fee_rate'],
     "firm_state_space": ['money'],
     "reward_functions": ["money_firms"],
-    "min_transaction_fee_low":0.010,
-    "max_transaction_fee_low":0.015,
+    "min_transaction_fee_low":0.001,
+    "max_transaction_fee_low":0.05,
     "min_transaction_fee_medium": 0.005,
     "max_transaction_fee_medium": 0.009,
     "min_transaction_fee_high": 0.001,
@@ -42,8 +59,8 @@ config = {
     "max_tax_rate_agents_low": 0,
     "min_tax_rate_agents_medium": 0.005,
     "max_tax_rate_agents_medium": 0.01,
-    "min_tax_rate_agents_high": 0.07,
-    "max_tax_rate_agents_high": 0.12,
+    "min_tax_rate_agents_high": 0.01,
+    "max_tax_rate_agents_high": 0.07,
     "min_tax_rate_firms_low": 0,
     "max_tax_rate_firms_low": 0,
     "min_tax_rate_firms_medium": 0.005,
@@ -55,7 +72,7 @@ config = {
     "merger_threshold_medium": 0.60,
     "merger_threshold_high": 0.30,
 
-    "min_interest_rate_low": 0.14,
+    "min_interest_rate_low": 0.03,
     "max_interest_rate_low": 0.16,
     "min_interest_rate_medium": 0.07,
     "max_interest_rate_medium": 0.10,
@@ -83,14 +100,16 @@ config = {
   },
   "general": {
     "save_state_iterations": 10,
-    "simulation_run_count": 10,
-    "iterations_in_each_simulation_run": 500,
+    "simulation_run_count": 50,
+    "iterations_in_each_simulation_run": 800,
     "mode":"centralized",
     "regulation_mode":"low",
   }
 }
 
-
+'''
+simulate centralized world interactions 
+'''
 def do_centralized_world_interactions(environment, i):
   # Agents interact with each other
   environment.interact_agents_with_agents()
@@ -118,10 +137,13 @@ def do_centralized_world_interactions(environment, i):
   if i%25 == 0:
     environment.gov_giving_aid()
 
-
+'''
+simulate de-centralized world interactions 
+'''
 def do_decentralized_world_interactions(environment, i):
   # Agents decide interest rate and give a cut to Crypto firms 
   environment.decentralized_lending()
+
   # Government regulate firms
   if i % 52 == 0:
     environment.regulators_regulate_firms()
@@ -133,6 +155,10 @@ def do_decentralized_world_interactions(environment, i):
   # Agent-agent interaction (betting)
   environment.interact_agents_with_agents()
 
+  # decentralized encourages lending and betting between poor/middle class
+  environment.interact_underrep_agents_with_agents()
+  environment.decentralized_lending_for_underrep()
+
   # Government giving aid
   if i%53 == 0:
     environment.gov_giving_aid()
@@ -140,14 +166,6 @@ def do_decentralized_world_interactions(environment, i):
   # give some ROI for the networth that is sitting in agent's account assume they invested it in different places
   if i %24 == 0:
     environment.agent_earn_roi()
-  
-
-  #environment.d_interact_agentSeeking_with_firm_with_agentLending()
-  #environment.d_interact_regulator_with_agentLending()
-  #environment.d_interact_regulator_with_firm()
-  #environment.d_interact_agents_with_agents()
-  pass
-
 
 def simulate(config, simulation_run_number, is_centralized):
   environment = Economy(config, is_centralized)
@@ -172,7 +190,6 @@ def simulate(config, simulation_run_number, is_centralized):
 
 def cleanOutputFolder(mode,regulation):
   folder_path = mode+"_"+regulation+"_output"
-  print (folder_path)
   try:
     shutil.rmtree(folder_path)
   except:
@@ -186,7 +203,6 @@ def run(mode, regulation):
   config["general"]["mode"] = mode
   config["general"]["regulation_mode"] = regulation
 
-  print (config)
   #clean up the specific output folder for the mode+regulation
   cleanOutputFolder(mode, regulation)
   if mode == "centralized":
@@ -197,7 +213,6 @@ def run(mode, regulation):
   summary_of_all_runs = []
   # run simulate N times with M Iterations (time steps) in each run
   for i in range(config["general"]["simulation_run_count"]):
-
     summary_data_for_onerun = simulate(config, i, is_centralized)
     summary_of_all_runs.extend(summary_data_for_onerun)
 
@@ -223,3 +238,5 @@ run("decentralized", "high")
 run("centralized", "low")
 run("centralized", "medium")
 run("centralized", "high")
+
+print("Simulation completed successfully!! Please check the output folders")

@@ -6,7 +6,6 @@ class Agent:
 
   def __init__(self, config):
     self.id = uuid.uuid1()
-    print(self.id)
     self.net_worth = 0
     self.risk_appetite = None
     self.credit_score = None
@@ -18,6 +17,3 @@ class Agent:
 def update_action_space(self, new_action_space):
   self.action_space = new_action_space
 
-
-# questions:
-# how to calculate income/net worth of each agent -- initial
